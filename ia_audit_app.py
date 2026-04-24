@@ -1,6 +1,5 @@
 # ============================================================
-# IA AUDIT TOOL (STREAMLIT CLOUD SAFE VERSION)
-# No tldextract dependency
+# IA AUDIT TOOL (UPDATED UX - GLOBAL URL INPUT)
 # ============================================================
 
 import streamlit as st
@@ -18,17 +17,14 @@ import hashlib
 def get_domain(url):
     return urlparse(url).netloc
 
-
 def is_valid(url, base_domain):
     try:
         return urlparse(url).netloc == base_domain
     except:
         return False
 
-
 def get_hash(content):
     return hashlib.md5(content.encode("utf-8")).hexdigest()
-
 
 # -----------------------------
 # CRAWLER
@@ -85,11 +81,9 @@ def crawl_site(start_url, max_pages=300):
 
             soup = BeautifulSoup(res.text, "lxml")
 
-            # Duplicate detection
             text = soup.get_text()
             content_map[url] = get_hash(text)
 
-            # Extract links
             links = []
 
             for a in soup.find_all("a", href=True):
@@ -106,7 +100,6 @@ def crawl_site(start_url, max_pages=300):
         except:
             pass
 
-        # Progress UI
         progress.progress(min(len(visited) / max_pages, 1.0))
         status.text(f"Crawled {len(visited)} pages")
 
@@ -114,28 +107,21 @@ def crawl_site(start_url, max_pages=300):
 
     return all_pages, content_map, link_map, redirect_map
 
-
 # -----------------------------
 # ANALYSIS
 # -----------------------------
 
 def find_duplicates(content_map):
     reverse = {}
-
     for url, h in content_map.items():
         reverse.setdefault(h, []).append(url)
-
     return [url for urls in reverse.values() if len(urls) > 1 for url in urls]
-
 
 def find_orphans(link_map, all_urls):
     linked = set()
-
     for links in link_map.values():
         linked.update(links)
-
     return [url for url in all_urls if url not in linked]
-
 
 # -----------------------------
 # STREAMLIT UI
@@ -143,36 +129,40 @@ def find_orphans(link_map, all_urls):
 
 st.set_page_config(page_title="IA Audit Tool", layout="wide")
 
+st.title("🚀 IA Audit Platform")
+
+# 🔹 GLOBAL INPUTS (VISIBLE ALWAYS)
+start_url = st.text_input("Enter UAT / Website URL", "https://example.com")
+
+max_pages = st.number_input(
+    "Max Pages to Crawl",
+    min_value=100,
+    max_value=20000,
+    value=300,
+    step=100
+)
+
+uploaded_file = st.file_uploader(
+    "Upload URL list (CSV) for accurate orphan detection",
+    type=["csv"]
+)
+
+# 🔹 TABS
 tab1, tab2 = st.tabs(["📌 Existing App", "🚀 IA Audit"])
 
 # -----------------------------
-# TAB 1 (Your existing app)
+# TAB 1
 # -----------------------------
 with tab1:
-    st.title("📌 Existing Application")
-    st.info("Place your existing application here.")
+    st.subheader("Existing Application")
+    st.info("You can plug your existing dashboard or logic here.")
 
 # -----------------------------
-# TAB 2 (IA Audit Tool)
+# TAB 2
 # -----------------------------
 with tab2:
 
-    st.title("🚀 IA Audit Tool")
-
-    start_url = st.text_input("Start URL", "https://example.com")
-
-    max_pages = st.number_input(
-        "Max Pages",
-        min_value=100,
-        max_value=20000,
-        value=300,
-        step=100
-    )
-
-    uploaded_file = st.file_uploader(
-        "Upload URL list (CSV) for accurate orphan detection",
-        type=["csv"]
-    )
+    st.subheader("IA Audit Execution")
 
     run = st.button("Run Audit")
 
